@@ -9,17 +9,21 @@ logging.basicConfig(stream=stdout, format='%(asctime)s %(message)s')
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+URL = "www.blabla.com"
+
 
 def _check_file_exists(s3obj):
     try:
         s3obj.load()
-    except Exception as ex:
+    except Exception:
         return False
 
     return True
 
 
 def upload_file(filename, fcontent, org):
+    global URL
+
     s3 = _get_s3_resource()
     obj = s3.Object("fstatsfiles", f"{org}/{filename}")
     if _check_file_exists(obj):
@@ -30,7 +34,7 @@ def upload_file(filename, fcontent, org):
 
     if 200 <= res["ResponseMetadata"]["HTTPStatusCode"] < 300:
         logger.info(f"File {filename} was created within organization {org}")
-        return {"file_location": f"{org}/{filename}", "result": 200}
+        return {"file_location": f"{URL}/{org}/{filename}", "result": 200}
 
     else:
         logger.error(f"Could not create file {filename} within org {org}")
@@ -57,8 +61,19 @@ def delete_file(filename, org):
     return {"result": 200}
 
 
-def get_file(filename, org):
+def _extract_key(furl):
+    global URL
+    try:
+        return furl.split(URL+"/")[1].splot("/")
+    except Exception as ex:
+        logger.error("Caught exception while parsing the URL")
+        logger.error(f"Exception was {ex}")
+        raise
+
+
+def get_file(url):
     s3 = _get_s3_resource()
+    org, filename = _extract_key(url)
     obj = s3.Object(org, filename)
 
     if not _check_file_exists(obj):
@@ -85,6 +100,7 @@ def _get_s3_resource():
         return resource('s3')
     else:
         return resource('s3')
+
 
 if __name__ == "__main__":
     from base64 import b64encode
