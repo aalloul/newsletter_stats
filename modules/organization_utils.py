@@ -50,9 +50,9 @@ def create_organization(org):
 
 def _get_objects(s3client, org, ct):
     if ct is None:
-        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org)
+        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org+"/")
     else:
-        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org,
+        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org+"/",
                                        ContinuationToken=ct)
 
     if 'KeyCount' not in res:
@@ -123,3 +123,7 @@ def _get_s3_client():
     return client('s3')
 
 
+# if __name__ == "__main__":
+DEBUG = True
+create_organization("org1")
+delete_organization("org")
