@@ -124,6 +124,6 @@ def _get_s3_client():
 
 
 # if __name__ == "__main__":
-DEBUG = True
-create_organization("org1")
-delete_organization("org")
+# DEBUG = True
+# create_organization("org1")
+# delete_organization("org")
