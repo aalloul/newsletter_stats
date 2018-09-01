@@ -52,6 +52,14 @@ def write_stats():
     pass
 
 
+def _authenticate_req(req):
+
+    if 'pwd' not in req or req['pwd'] != "x7ZL$mWkrW%^sQMy":
+        logger.error("Received request without/with incorrect password")
+        logger.error(f"Request was {req}")
+        raise Exception("malformed request")
+
+
 def main(event, context):
     """
     Expected Payload
@@ -68,17 +76,23 @@ def main(event, context):
             "userID": "user slackID",
             "organization_name": "tripaneer",
             "organization_id": "organization slackID",
+            "pwd": "x7ZL$mWkrW%^sQMy"
         }
     :return:
     """
 
     logger.info("Request received")
+
+    logger.info("Authenticating request")
+    _authenticate_req(event["body-json"])
+
     if 'action_type' not in event['body-json']:
         logger.error("action_type not found in body - raise Exception")
         logger.error(f"Full request was {dumps(event, indent=4)}")
         raise Exception("Request malformed")
 
     try:
+        logger.info("Dispatch request")
         return dispatch_request(event['body-json'])
 
     except Exception:
@@ -88,62 +102,66 @@ def main(event, context):
     finally:
         report_usage(event)
 
+
 if __name__ == "__main__" or True:
     from time import time
 
     # Create Organization
-    req = {
+    myreq = {
         "body-json": {
             "request_timestamp": int(time()),
             "action_type": "create_organization",
-            "organization_name": "org1"}
+            "organization_name": "org1",
+            "pwd": "x7ZL$mWkrW%^sQMy"}
     }
-    main(req, "")
+    main(myreq, "")
 
     # Upload file 1
     from base64 import b64encode
     with open("/Users/adamalloul/mv_assets.py", "r") as f:
         filecontent = b64encode(f.read().encode("utf-8"))
-    req = {
+    myreq = {
         "body-json": {
             "request_timestamp": int(time()),
             "action_type": "upload",
             "organization_name": "org1",
             "filename": "mv_assets.py",
-            "content": filecontent
-        }
+            "content": filecontent,
+            "pwd": "x7ZL$mWkrW%^sQMy"}
     }
-    main(req, "")
+    main(myreq, "")
 
     # Upload file 2
-    req = {
+    myreq = {
         "body-json": {
             "request_timestamp": int(time()),
             "action_type": "upload",
             "organization_name": "org1",
             "filename": "mv_assets2.py",
-            "content": filecontent
-        }
+            "content": filecontent,
+            "pwd": "x7ZL$mWkrW%^sQMy"}
     }
-    main(req, "")
+    main(myreq, "")
 
     # Delete file 2
-    req = {
+    myreq = {
         "body-json": {
             "request_timestamp": int(time()),
             "action_type": "delete_file",
             "organization_name": "org1",
             "filename": "mv_assets2.py",
+            "pwd": "x7ZL$mWkrW%^sQMy"
         }
     }
-    main(req, "")
+    main(myreq, "")
 
     # Delete Organization
-    req = {
+    myreq = {
         "body-json": {
             "request_timestamp": int(time()),
             "action_type": "delete_organization",
             "organization_name": "org1",
+            "pwd": "x7ZL$mWkrW%^sQMy"
         }
     }
-    main(req, "")
+    main(myreq, "")
