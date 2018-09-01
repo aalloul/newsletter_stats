@@ -28,19 +28,9 @@ def create_organization(org):
 
     res = obj.put(ACL='private', Body='')
 
-    if "ResponseMetadata" not in res:
-        logger.error("Key 'RequestId' not found in response from S3")
-        logger.error(f"Answer was {res}")
-        raise Exception("Unexpected answer from S3")
-
-    if "HTTPStatusCode" not in res["ResponseMetadata"]:
-        logger.error("Key 'HTTPStatusCode' not found in response from S3")
-        logger.error(f"Answer was {res}")
-        raise Exception("Unexpected answer from S3")
-
     if 200 <= res["ResponseMetadata"]["HTTPStatusCode"] < 300:
         logger.info(f"Organization {org} was created at {res}")
-        return {"response": 200}
+        return {"result": 200}
 
     else:
         logger.error(f"Could not create organization {org}")
@@ -108,7 +98,7 @@ def delete_organization(org):
     _empty_bucket(s3, org)
 
     logger.info(f"Bucket {org} was successfully deleted")
-    return True
+    return {"result": 200}
 
 
 def _get_s3_resource():

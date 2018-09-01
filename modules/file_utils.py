@@ -28,16 +28,6 @@ def upload_file(filename, fcontent, org):
 
     res = obj.put(ACL='private', Body=b64decode(fcontent))
 
-    if "ResponseMetadata" not in res:
-        logger.error("Key 'RequestId' not found in response from S3")
-        logger.error(f"Answer was {res}")
-        raise Exception("Unexpected answer from S3")
-
-    if "HTTPStatusCode" not in res["ResponseMetadata"]:
-        logger.error("Key 'HTTPStatusCode' not found in response from S3")
-        logger.error(f"Answer was {res}")
-        raise Exception("Unexpected answer from S3")
-
     if 200 <= res["ResponseMetadata"]["HTTPStatusCode"] < 300:
         logger.info(f"File {filename} was created within organization {org}")
         return {"file_location": f"{org}/{filename}", "result": 200}
@@ -50,7 +40,7 @@ def upload_file(filename, fcontent, org):
 
 def delete_file(filename, org):
     s3 = _get_s3_resource()
-    obj = s3.Object(org, filename)
+    obj = s3.Object("fstatsfiles", f"{org}/{filename}")
 
     if not _check_file_exists(obj):
         logger.error(f"File {filename} within organization {org} does not "
@@ -60,9 +50,11 @@ def delete_file(filename, org):
                         f"{org}")
 
     res = obj.delete()
-    logger.info(f"Delete file {filename} within organization {org} successful")
-    logger.info(f"Response was {res}")
-    return True
+    if 200 <= res["ResponseMetadata"]["HTTPStatusCode"] <= 299:
+        logger.info(f"Delete file {filename} within organization {org} "
+                    f"successful")
+        logger.info(f"Response was {res}")
+    return {"result": 200}
 
 
 def get_file(filename, org):
@@ -100,4 +92,5 @@ if __name__ == "__main__":
     with open("/Users/adamalloul/mv_assets.py", "r") as f:
         filecontent = b64encode(f.read().encode("utf-8"))
 
+    delete_file("mv_assets2.py", "org1")
     file_location = upload_file("mv_assets2.py", filecontent, "org1")
