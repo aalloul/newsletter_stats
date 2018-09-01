@@ -102,11 +102,7 @@ def delete_organization(org):
 
 
 def _get_s3_resource():
-    global DEBUG
-    if DEBUG:
-        return resource('s3')
-    else:
-        return resource('s3')
+    return resource('s3')
 
 
 def _get_s3_client():
@@ -114,6 +110,6 @@ def _get_s3_client():
 
 
 # if __name__ == "__main__":
-# DEBUG = True
+#
 # create_organization("org1")
 # delete_organization("org")

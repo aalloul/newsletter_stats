@@ -30,10 +30,10 @@ def dispatch_request(req):
     elif req['action_type'] == "get_file":
         logger.info(f"File {req['filename']} within organization "
                     f"{req['organization_name']} was requested")
-        return get_file(req['filename'], req['organization_name'])
+        return get_file(req['filename'])
 
     elif req['action_type'] == 'delete_file':
-        logger.info(f"Deleting file {req['content']}, within organization "
+        logger.info(f"Deleting file {req['filename']}, within organization "
                     f"{req['organization_name']}")
         return delete_file(req['filename'], req['organization_name'])
 
@@ -87,3 +87,63 @@ def main(event, context):
 
     finally:
         report_usage(event)
+
+if __name__ == "__main__" or True:
+    from time import time
+
+    # Create Organization
+    req = {
+        "body-json": {
+            "request_timestamp": int(time()),
+            "action_type": "create_organization",
+            "organization_name": "org1"}
+    }
+    main(req, "")
+
+    # Upload file 1
+    from base64 import b64encode
+    with open("/Users/adamalloul/mv_assets.py", "r") as f:
+        filecontent = b64encode(f.read().encode("utf-8"))
+    req = {
+        "body-json": {
+            "request_timestamp": int(time()),
+            "action_type": "upload",
+            "organization_name": "org1",
+            "filename": "mv_assets.py",
+            "content": filecontent
+        }
+    }
+    main(req, "")
+
+    # Upload file 2
+    req = {
+        "body-json": {
+            "request_timestamp": int(time()),
+            "action_type": "upload",
+            "organization_name": "org1",
+            "filename": "mv_assets2.py",
+            "content": filecontent
+        }
+    }
+    main(req, "")
+
+    # Delete file 2
+    req = {
+        "body-json": {
+            "request_timestamp": int(time()),
+            "action_type": "delete_file",
+            "organization_name": "org1",
+            "filename": "mv_assets2.py",
+        }
+    }
+    main(req, "")
+
+    # Delete Organization
+    req = {
+        "body-json": {
+            "request_timestamp": int(time()),
+            "action_type": "delete_organization",
+            "organization_name": "org1",
+        }
+    }
+    main(req, "")

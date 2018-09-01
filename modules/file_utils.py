@@ -95,16 +95,11 @@ def get_file(url):
 
 
 def _get_s3_resource():
-    global DEBUG
-    if DEBUG:
-        return resource('s3')
-    else:
-        return resource('s3')
+    return resource('s3')
 
 
 if __name__ == "__main__":
     from base64 import b64encode
-    DEBUG = False
     with open("/Users/adamalloul/mv_assets.py", "r") as f:
         filecontent = b64encode(f.read().encode("utf-8"))
 
