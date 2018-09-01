@@ -1,4 +1,4 @@
-from boto3 import resource
+from boto3 import resource, client
 import logging
 from sys import stdout
 from json import dumps
@@ -50,9 +50,10 @@ def create_organization(org):
 
 def _get_objects(s3client, org, ct):
     if ct is None:
-        res = s3client.list_objects_v2(Bucket=org)
+        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org)
     else:
-        res = s3client.list_objects_v2(Bucket=org, ContinuationToken=ct)
+        res = s3client.list_objects_v2(Bucket="fstatsfiles", Prefix=org,
+                                       ContinuationToken=ct)
 
     if 'KeyCount' not in res:
         logger.error(f"KeyCount not found in response to "
@@ -78,7 +79,8 @@ def _empty_bucket(s3client, org):
             break
         files_to_delete += [r['Key'] for r in res['Contents']]
         is_trunc = res['IsTruncated']
-        continuation_token = res['ContinuationToken']
+        if 'ContinuationToken' in res:
+            continuation_token = res['ContinuationToken']
 
     logger.debug("  Deleting files")
     obj = []
@@ -87,21 +89,24 @@ def _empty_bucket(s3client, org):
         files_to_delete.pop(0)
 
         if len(obj) == 1000:
-            s3client.delete_objects(Bucket='string', Delete={'Objects': obj})
+            s3client.delete_objects(Bucket='fstatsfiles',
+                                    Delete={'Objects': obj})
             obj.clear()
+
+    if len(obj) > 0:
+        s3client.delete_objects(Bucket='fstatsfiles', Delete={'Objects': obj})
 
 
 def delete_organization(org):
-    s3 = _get_s3_resource()
-    obj = s3.Object("fstatsfiles", org + "/")
+    s3 = _get_s3_client()
+    obj = _get_s3_resource().Object("fstatsfiles", org+"/")
 
-    if not _check_org_exists(s3, org):
+    if not _check_org_exists(obj):
         logger.error(f"Organization {org} does not exist")
         raise Exception("Organization does not exist")
 
     _empty_bucket(s3, org)
 
-    s3.delete_bucket(Bucket=org)
     logger.info(f"Bucket {org} was successfully deleted")
     return True
 
@@ -114,6 +119,7 @@ def _get_s3_resource():
         return resource('s3')
 
 
-# if __name__ == "__main__":
-DEBUG = True
-create_organization("org1")
+def _get_s3_client():
+    return client('s3')
+
+
