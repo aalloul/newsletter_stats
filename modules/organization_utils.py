@@ -1,6 +1,7 @@
-from boto3 import client
+from boto3 import resource
 import logging
 from sys import stdout
+from json import dumps
 
 # Logging
 logging.basicConfig(stream=stdout, format='%(asctime)s %(message)s')
@@ -8,33 +9,43 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def _check_org_exists(s3client, name):
+def _check_org_exists(s3object):
     from botocore.exceptions import ClientError
     try:
-        s3client.head_bucket(Bucket=name)
+        s3object.load()
         return True
     except ClientError:
         return False
 
 
 def create_organization(org):
-    s3 = _get_s3_client()
+    s3 = _get_s3_resource()
+    obj = s3.Object("fstatsfiles", org+"/")
 
-    if _check_org_exists(s3, org):
+    if _check_org_exists(obj):
         logger.error("Organization already exists")
         raise Exception("Malformed request")
 
-    res = s3.create_bucket(ACL='private', Bucket=org)
+    res = obj.put(ACL='private', Body='')
 
-    if 'Location' not in res or res['Location'] == '':
-        logger.error("Unexpected response from s3, Location not found in "
-                     "result")
+    if "ResponseMetadata" not in res:
+        logger.error("Key 'RequestId' not found in response from S3")
         logger.error(f"Answer was {res}")
         raise Exception("Unexpected answer from S3")
 
-    logger.info(f"Organization {org} was created at {res['Location']}")
+    if "HTTPStatusCode" not in res["ResponseMetadata"]:
+        logger.error("Key 'HTTPStatusCode' not found in response from S3")
+        logger.error(f"Answer was {res}")
+        raise Exception("Unexpected answer from S3")
 
-    return {"response": 200}
+    if 200 <= res["ResponseMetadata"]["HTTPStatusCode"] < 300:
+        logger.info(f"Organization {org} was created at {res}")
+        return {"response": 200}
+
+    else:
+        logger.error(f"Could not create organization {org}")
+        logger.error(f"Response from S3 {dumps(res, indent=4)}")
+        raise Exception(f"Could not create organization {org}")
 
 
 def _get_objects(s3client, org, ct):
@@ -81,7 +92,8 @@ def _empty_bucket(s3client, org):
 
 
 def delete_organization(org):
-    s3 = _get_s3_client()
+    s3 = _get_s3_resource()
+    obj = s3.Object("fstatsfiles", org + "/")
 
     if not _check_org_exists(s3, org):
         logger.error(f"Organization {org} does not exist")
@@ -94,12 +106,12 @@ def delete_organization(org):
     return True
 
 
-def _get_s3_client():
+def _get_s3_resource():
     global DEBUG
     if DEBUG:
-        return client('s3', endpoint_url='http://localhost:4572/')
+        return resource('s3')
     else:
-        return client('s3')
+        return resource('s3')
 
 
 # if __name__ == "__main__":
